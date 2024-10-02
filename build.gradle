@@ -1,9 +1,6 @@
-import java.util.jar.JarEntry
-import java.util.jar.JarOutputStream
-
 //file:noinspection GrMethodMayBeStatic
 plugins {
-    id "fabric-loom" version "1.6.+"
+    id "fabric-loom" version "1.7.+"
 
     id "io.github.p03w.machete" version "1.1.4" // automatic jar compressing on build
 
@@ -23,7 +20,6 @@ group = project.maven_group
 archivesBaseName = "create-fabric"
 
 repositories {
-    maven { url = "https://maven.quiltmc.org/repository/release" } // QM
     maven { url = "https://maven.parchmentmc.org" } // Parchment
     maven { url = "https://maven.fabricmc.net/" } // FAPI, Loader
     maven { url = "https://mvn.devos.one/snapshots/" } // Registrate, Forge Tags, Milk Lib
@@ -65,6 +61,9 @@ def dependencies(DependencyHandler deps) {
         exclude(group: "io.github.fabricators_of_create") // avoid duplicate Porting Lib
     }
 
+    deps.modApi(deps.include("com.electronwill.night-config:core:$night_config_version"))
+    deps.modApi(deps.include("com.electronwill.night-config:toml:$night_config_version"))
+    deps.modApi(deps.include("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:$forge_config_api_port_version"))
     deps.modApi(deps.include("com.jozufozu.flywheel:flywheel-fabric-$flywheel_minecraft_version:$flywheel_version"))
     deps.modApi(deps.include("com.jamieswhiteshirt:reach-entity-attributes:$reach_entity_attributes_version"))
     deps.modApi(deps.include("io.github.tropheusj:milk-lib:$milk_lib_version"))
@@ -75,9 +74,8 @@ def dependencies(DependencyHandler deps) {
 def setup(DependencyHandler deps) {
     deps.minecraft("com.mojang:minecraft:$minecraft_version")
     deps.mappings(loom.layered {
-        it.mappings("org.quiltmc:quilt-mappings:$minecraft_version+build.$qm_version:intermediary-v2")
-        it.parchment("org.parchmentmc.data:parchment-$minecraft_version:$parchment_version@zip")
         it.officialMojangMappings { nameSyntheticMembers = false }
+        it.parchment("org.parchmentmc.data:parchment-$minecraft_version:$parchment_version@zip")
     })
     deps.modImplementation("net.fabricmc:fabric-loader:$loader_version")
 }
@@ -185,7 +183,7 @@ loom {
             server()
             name "Headlesss GameTests"
             vmArg "-Dfabric-api.gametest"
-            vmArg "-Dfabric-api.gametest.report-file=${project.buildDir}/junit.xml"
+            vmArg "-Dfabric-api.gametest.report-file=${project.layout.buildDirectory}/junit.xml"
             runDir "run/gametest"
         }
     }
@@ -199,6 +197,7 @@ processResources {
             "minecraft_version": minecraft_version,
             "loader_version": loader_version,
             "fabric_version": fabric_version,
+            "forge_config_version": forge_config_api_port_version,
             "milk_lib_version": milk_lib_version,
             "reach_entity_attributes_version": reach_entity_attributes_version
     ]
@@ -231,43 +230,6 @@ jar {
     from("LICENSE") {
         rename { "${it}_$archivesBaseName" }
     }
-}
-
-tasks.register("createStubJar") {
-    outputs.upToDateWhen { false }
-
-    ByteArrayOutputStream byteStream = new ByteArrayOutputStream()
-    JarOutputStream jarStream = new JarOutputStream(byteStream)
-
-    try {
-        File fabricModJson = file("$projectDir/stubMod/fabric.mod.json")
-        if (fabricModJson.exists()) {
-            String content = fabricModJson.text.replace('${version}', mod_version)
-            jarStream.putNextEntry(new JarEntry("fabric.mod.json"))
-            jarStream.write(content.bytes)
-            jarStream.closeEntry()
-        } else {
-            throw new FileNotFoundException("Warning: fabric.mod.json not found at ${fabricModJson.path}")
-        }
-    } finally {
-        jarStream.close()
-    }
-
-    File baseDir = file("$projectDir/build/stub")
-    baseDir.mkdirs()
-    File outputFile = file("$baseDir/create-stub-${mod_version}.jar")
-    outputFile.withOutputStream { os ->
-        byteStream.writeTo(os)
-    }
-
-    outputs.file(outputFile)
-
-    println "Stub jar created at: ${outputFile.path}"
-}
-
-tasks.remapJar.configure {
-    dependsOn tasks.createStubJar
-    tasks.remapJar.nestedJars.from(createStubJar.outputs)
 }
 
 // see gradle/publishing.gradle for publishing

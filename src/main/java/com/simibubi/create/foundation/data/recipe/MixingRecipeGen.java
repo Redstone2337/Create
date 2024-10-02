@@ -10,6 +10,7 @@ import io.github.fabricators_of_create.porting_lib.tags.Tags;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -26,7 +27,7 @@ public class MixingRecipeGen extends ProcessingRecipeGen {
 		TEA = create("tea", b -> b.require(Fluids.WATER, FluidConstants.BOTTLE)
 			.require(Tags.Fluids.MILK, FluidConstants.BOTTLE)
 			.require(ItemTags.LEAVES)
-			.output(AllFluids.TEA.get(), FluidConstants.BOTTLE * 2)
+			.output(AllFluids.TEA.get(), FluidConstants.BUCKET / 2)
 			.requiresHeat(HeatCondition.HEATED)),
 
 		CHOCOLATE = create("chocolate", b -> b.require(Tags.Fluids.MILK, FluidConstants.BOTTLE)
@@ -54,17 +55,39 @@ public class MixingRecipeGen extends ProcessingRecipeGen {
 
 		ANDESITE_ALLOY = create("andesite_alloy", b -> b.require(Blocks.ANDESITE)
 			.require(I.ironNugget())
-			.output(I.andesite(), 1)),
+			.output(I.andesiteAlloy(), 1)),
 
 		ANDESITE_ALLOY_FROM_ZINC = create("andesite_alloy_from_zinc", b -> b.require(Blocks.ANDESITE)
 			.require(I.zincNugget())
-			.output(I.andesite(), 1)),
+			.output(I.andesiteAlloy(), 1)),
 
 		MUD = create("mud_by_mixing", b -> b.require(BlockTagIngredient.create(BlockTags.CONVERTABLE_TO_MUD))
 			.require(Fluids.WATER, FluidConstants.BOTTLE)
-			.output(Blocks.MUD, 1))
+			.output(Blocks.MUD, 1)),
+
+		// AE2
+
+		AE2_FLUIX = create(Mods.AE2.recipeId("fluix_crystal"), b -> b.require(Tags.Items.DUSTS_REDSTONE)
+				.require(Fluids.WATER, FluidConstants.BOTTLE)
+				.require(Mods.AE2, "charged_certus_quartz_crystal")
+				.require(Tags.Items.GEMS_QUARTZ)
+				.output(1f, Mods.AE2, "fluix_crystal", 2)
+				.whenModLoaded(Mods.AE2.getId())),
+
+		// Regions Unexplored
+
+		RU_PEAT_MUD = moddedMud(Mods.RU, "peat"),
+		RU_SILT_MUD = moddedMud(Mods.RU, "silt")
 
 	;
+
+	public GeneratedRecipe moddedMud(Mods mod, String name) {
+		String mud = name + "_mud";
+		return create(mod.recipeId(mud), b -> b.require(Fluids.WATER, FluidConstants.BOTTLE)
+				.require(mod, name + "_dirt")
+				.output(mod, mud)
+				.whenModLoaded(mod.getId()));
+	}
 
 	public MixingRecipeGen(FabricDataOutput output) {
 		super(output);

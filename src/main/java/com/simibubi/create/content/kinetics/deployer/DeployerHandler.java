@@ -291,12 +291,15 @@ public class DeployerHandler {
 			!(player.isShiftKeyDown() && holdingSomething)/* || (stack.doesSneakBypassUse(world, clickedPos, player))*/;
 
 		// Use on block
-		if (useBlock != null && flag1
+		if (useBlock != InteractionResult.FAIL && flag1
 			&& safeOnUse(clickedState, world, clickedPos, player, hand, result).consumesAction())
 			return;
 		if (stack.isEmpty())
 			return;
-		if (useItem == null)
+		if (useItem == InteractionResult.FAIL)
+			return;
+		if (item instanceof CartAssemblerBlockItem
+			&& clickedState.canBeReplaced(new BlockPlaceContext(itemusecontext)))
 			return;
 
 		// Reposition fire placement for convenience
@@ -320,9 +323,6 @@ public class DeployerHandler {
 			return;
 		}
 
-		if (item instanceof BlockItem && !(item instanceof CartAssemblerBlockItem)
-				&& !clickedState.canBeReplaced(new BlockPlaceContext(itemusecontext)))
-			return;
 		if (item == Items.ENDER_PEARL)
 			return;
 		if (AllItemTags.DEPLOYABLE_DRINK.matches(item))
