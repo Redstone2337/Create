@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
@@ -1175,7 +1177,8 @@ public class StandardRecipeGen extends CreateRecipeProvider {
 			.inBlastFurnace(),
 
 		UA_TREE_FERTILIZER = create(AllItems.TREE_FERTILIZER::get).returns(2)
-			.whenModLoaded(Mods.UA.getId()).unlockedBy(() -> Items.BONE_MEAL)
+			.unlockedBy(() -> Items.BONE_MEAL)
+			.whenModLoaded(Mods.UA.getId())
 			.viaShapeless(b -> b.requires(Ingredient.of(ItemTags.SMALL_FLOWERS), 2)
 					.requires(AllItemTags.UA_CORAL.tag).requires(Items.BONE_MEAL))
 
@@ -1221,8 +1224,8 @@ public class StandardRecipeGen extends CreateRecipeProvider {
 	}
 
 	GeneratedRecipe blastModdedCrushedMetal(ItemEntry<? extends Item> ingredient, CompatMetals metal) {
-		String metalName = metal.getName();
 		for (Mods mod : metal.getMods()) {
+			String metalName = metal.getName(mod);
 			ResourceLocation ingot = mod.ingotOf(metalName);
 			String modId = mod.getId();
 			create(ingot).withSuffix("_compat_" + modId)
@@ -1372,7 +1375,12 @@ public class StandardRecipeGen extends CreateRecipeProvider {
 				ShapelessRecipeBuilder b = builder.apply(ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result.get(), amount));
 				if (unlockedBy != null)
 					b.unlockedBy("has_item", inventoryTrigger(unlockedBy.get()));
-				b.save(consumer, createLocation("crafting"));
+
+				b.save(result -> {
+					consumer.accept(
+							!recipeConditions.isEmpty() ? new ConditionSupportingShapelessRecipeResult(result, recipeConditions)
+									: result);
+				}, createLocation("crafting"));
 			});
 		}
 
@@ -1499,19 +1507,37 @@ public class StandardRecipeGen extends CreateRecipeProvider {
 		super(p_i48262_1_);
 	}
 
-	private static class ModdedCookingRecipeResult implements FinishedRecipe {
+	private record ModdedCookingRecipeResult(FinishedRecipe wrapped, ResourceLocation outputOverride, List<ConditionJsonProvider> conditions) implements FinishedRecipe {
+			@Override
+			public ResourceLocation getId() {
+				return wrapped.getId();
+			}
 
-		private FinishedRecipe wrapped;
-		private ResourceLocation outputOverride;
-		private List<ConditionJsonProvider> conditions;
+			@Override
+			public RecipeSerializer<?> getType() {
+				return wrapped.getType();
+			}
 
-		public ModdedCookingRecipeResult(FinishedRecipe wrapped, ResourceLocation outputOverride,
-			List<ConditionJsonProvider> conditions) {
-			this.wrapped = wrapped;
-			this.outputOverride = outputOverride;
-			this.conditions = conditions;
+			@Override
+			public JsonObject serializeAdvancement() {
+				return wrapped.serializeAdvancement();
+			}
+
+			@Override
+			public ResourceLocation getAdvancementId() {
+				return wrapped.getAdvancementId();
+			}
+
+			@Override
+			public void serializeRecipeData(JsonObject object) {
+				wrapped.serializeRecipeData(object);
+				object.addProperty("result", outputOverride.toString());
+
+				ConditionJsonProvider.write(object, conditions.toArray(new ConditionJsonProvider[0]));
+			}
 		}
 
+	private record ConditionSupportingShapelessRecipeResult(FinishedRecipe wrapped, List<ConditionJsonProvider> conditions) implements FinishedRecipe {
 		@Override
 		public ResourceLocation getId() {
 			return wrapped.getId();
@@ -1533,13 +1559,10 @@ public class StandardRecipeGen extends CreateRecipeProvider {
 		}
 
 		@Override
-		public void serializeRecipeData(JsonObject object) {
-			wrapped.serializeRecipeData(object);
-			object.addProperty("result", outputOverride.toString());
+		public void serializeRecipeData(@NotNull JsonObject pJson) {
+			wrapped.serializeRecipeData(pJson);
 
-			ConditionJsonProvider.write(object, conditions.toArray(new ConditionJsonProvider[0]));
+			ConditionJsonProvider.write(pJson, conditions.toArray(new ConditionJsonProvider[0]));
 		}
-
 	}
-
 }
