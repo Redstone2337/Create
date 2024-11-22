@@ -3,20 +3,20 @@
     {
       "condition": "fabric:all_mods_loaded",
       "values": [
-        "ae2"
+        "bewitchment"
       ]
     }
   ],
-  "type": "create:milling",
+  "type": "create:splashing",
   "ingredients": [
     {
-      "tag": "c:certus_quartz"
+      "item": "create:crushed_raw_silver"
     }
   ],
-  "processingTime": 200,
   "results": [
     {
-      "item": "ae2:certus_quartz_dust"
+      "count": 9,
+      "item": "bewitchment:silver_nugget"
     }
   ]
 }

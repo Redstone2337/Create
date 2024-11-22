@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "tag": "c:raw_zinc_ores"
+            "items": [
+              "create:crushed_raw_silver"
+            ]
           }
         ]
       },
@@ -13,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "create:smelting/zinc_ingot_from_raw_ore"
+        "recipe": "create:blasting/silver_ingot_compat_bewitchment"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "create:smelting/zinc_ingot_from_raw_ore"
+      "create:blasting/silver_ingot_compat_bewitchment"
     ]
   },
   "sends_telemetry_event": false
